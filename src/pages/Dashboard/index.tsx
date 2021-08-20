@@ -2,17 +2,24 @@ import React from 'react';
 import { FiPower } from 'react-icons/fi';
 import { useAuth } from '../../hooks/auth';
 
-// import { Container } from './styles';
+import { Container, Content } from './styles';
+
+import Upload from '../../components/Upload';
 
 const Dashboard: React.FC = () => {
   const { signOut } = useAuth();
   return (
     <>
       <h1>Dashboard</h1>
-      <button type="button" onClick={signOut}>
-        <FiPower />
-        Exit
-      </button>
+      <Container>
+        <Content>
+          <Upload />
+        </Content>
+        <button type="button" onClick={signOut}>
+          <FiPower />
+          Exit
+        </button>
+      </Container>
     </>
   );
 };
