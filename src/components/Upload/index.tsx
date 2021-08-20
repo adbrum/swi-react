@@ -1,7 +1,7 @@
-import React, { Component } from 'react';
+import React from 'react';
 import Dropzone from 'react-dropzone';
 
-import { DropContainer, UploadMessage } from './styles.js';
+import { DropContainer, UploadMessage } from './styles';
 
 const Upload: React.FC = () => {
   const renderDragMessage = (isDragActive, isDragReject) => {

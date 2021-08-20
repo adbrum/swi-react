@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/auth';
 import { Container, Content } from './styles';
 
 import Upload from '../../components/Upload';
+import FileList from '../../components/FileList';
 
 const Dashboard: React.FC = () => {
   const { signOut } = useAuth();
@@ -14,6 +15,7 @@ const Dashboard: React.FC = () => {
       <Container>
         <Content>
           <Upload />
+          <FileList />
         </Content>
         <button type="button" onClick={signOut}>
           <FiPower />
