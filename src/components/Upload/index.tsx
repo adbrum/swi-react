@@ -1,35 +1,110 @@
-import React from 'react';
-import Dropzone from 'react-dropzone';
+/* eslint-disable no-plusplus */
+import React, { useCallback, useEffect, useState } from 'react';
+import { Grid, makeStyles } from '@material-ui/core';
+import { useField } from 'formik';
+import { FileError, FileRejection, useDropzone } from 'react-dropzone';
+import { SingleFileUploadWithProgress } from './UploadProgress';
+import { UploadError } from './UploadError';
 
-import { DropContainer, UploadMessage } from './styles';
+let currentId = 0;
 
-const Upload: React.FC = () => {
-  const renderDragMessage = (isDragActive, isDragReject) => {
-    if (!isDragActive) {
-      return <UploadMessage>Drag files to here...</UploadMessage>;
-    }
+function getNewId() {
+  // we could use a fancier solution instead of a sequential ID :)
 
-    if (isDragReject) {
-      return <UploadMessage>Unsupported file</UploadMessage>;
-    }
+  return ++currentId;
+}
 
-    return <UploadMessage>Drop files here</UploadMessage>;
-  };
+export interface UploadableFile {
+  // id was added after the video being released to fix a bug
+  // Video with the bug -> https://youtube-2021-feb-multiple-file-upload-formik-bmvantunes.vercel.app/bug-report-SMC-Alpha-thank-you.mov
+  // Thank you for the bug report SMC Alpha - https://www.youtube.com/channel/UC9C4AlREWdLoKbiLNiZ7XEA
+  id: number;
+  file: File;
+  errors: FileError[];
+  url?: string;
+}
+
+const useStyles = makeStyles(theme => ({
+  dropzone: {
+    border: `2px dashed ${theme.palette.primary.main}`,
+    borderRadius: theme.shape.borderRadius,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: theme.palette.background.default,
+    height: theme.spacing(10),
+    outline: 'none',
+  },
+}));
+
+export function MultipleFileUploadField({ name }: { name: string }) {
+  const [_, __, helpers] = useField(name);
+  const classes = useStyles();
+
+  const [files, setFiles] = useState<UploadableFile[]>([]);
+  const onDrop = useCallback((accFiles: File[], rejFiles: FileRejection[]) => {
+    const mappedAcc = accFiles.map(file => ({
+      file,
+      errors: [],
+      id: getNewId(),
+    }));
+    const mappedRej = rejFiles.map(r => ({ ...r, id: getNewId() }));
+    setFiles(curr => [...curr, ...mappedAcc, ...mappedRej]);
+  }, []);
+
+  useEffect(() => {
+    helpers.setValue(files);
+    // helpers.setTouched(true);
+  }, [files]);
+
+  function onUpload(file: File, url: string) {
+    setFiles(curr =>
+      curr.map(fw => {
+        if (fw.file === file) {
+          return { ...fw, url };
+        }
+        return fw;
+      }),
+    );
+  }
+
+  function onDelete(file: File) {
+    setFiles(curr => curr.filter(fw => fw.file !== file));
+  }
+
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    accept: ['image/*'],
+    maxSize: 1920 * 1080,
+  });
+
   return (
-    <Dropzone accept="image/*" onDropAccepted={() => {}}>
-      {({ getRootProps, getInputProps, isDragActive, isDragReject }) => (
-        <DropContainer
-          {...getRootProps()}
-          isDragActive={isDragActive}
-          isDragReject={isDragReject}
-          className="dropzone"
-        >
+    <>
+      <Grid item>
+        <div {...getRootProps({ className: classes.dropzone })}>
           <input {...getInputProps()} />
-          {renderDragMessage(isDragActive, isDragReject)}
-        </DropContainer>
-      )}
-    </Dropzone>
-  );
-};
 
-export default Upload;
+          <p>Dragn drop some files here, or click to select files</p>
+        </div>
+      </Grid>
+
+      {files.map(fileWrapper => (
+        <Grid item key={fileWrapper.id}>
+          {fileWrapper.errors.length ? (
+            <UploadError
+              file={fileWrapper.file}
+              errors={fileWrapper.errors}
+              onDelete={onDelete}
+            />
+          ) : (
+            <SingleFileUploadWithProgress
+              onDelete={onDelete}
+              onUpload={onUpload}
+              file={fileWrapper.file}
+            />
+          )}
+        </Grid>
+      ))}
+    </>
+  );
+}
